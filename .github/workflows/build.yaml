@@ -1,0 +1,36 @@
+name: Build macOS App
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build App
+        run: |
+          xcodebuild -project UTMBeGone.xcodeproj \
+                     -scheme UTMBeGone \
+                     -configuration Release \
+                     -derivedDataPath build \
+                     CODE_SIGN_IDENTITY="" \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGNING_ALLOWED=NO
+
+      - name: Create DMG
+        run: |
+          mkdir -p dist
+          cp -R build/Build/Products/Release/UTMBeGone.app dist/
+          hdiutil create -volname "UTMBeGone" -srcfolder dist -ov -format UDZO UTMBeGone.dmg
+
+      - name: Upload DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UTMBeGone-Installer
+          path: UTMBeGone.dmg
